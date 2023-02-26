@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spoodl"
+version = "0.0.1"
+authors = [
+    { name = "elplatypo" },
+]
+description = "Simple spotify playlist synchronizer"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "programming language :: python :: 3",
+    "operating system :: os independent",
+]
+
+
+dependencies = [
+    "spotipy >= 2.22.1",
+    "yt-dlp >= 2023.2.17",
+    "youtube-search-python >= 1.6.6",
+    "python-dotenv >= 1.0.0",
+]
+
+# [project.optional-dependencies]
+# dotenv = ["python-dotenv"]
