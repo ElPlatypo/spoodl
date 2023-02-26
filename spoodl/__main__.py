@@ -14,8 +14,6 @@ if __name__ == "__main__":
     with open("playlists.txt") as file:
         playlist_urls = file.readlines()
 
-    print(playlist_urls)
-
     from .playlist import lookup_playlist, Playlist
 
     print("> fetching playlist metadata")
@@ -27,22 +25,23 @@ if __name__ == "__main__":
             os.mkdir(playlist.name)
         playlists.append(playlist)
 
-    print(playlists)
-
     from .search import get_song_download_url
-
-    print("> fetching track URLs")
-    #look for youtube links
-    tracks_to_download = []
-    for playlist in playlists:
-        for track in playlist.tracks:
-            tracks_to_download.append(get_song_download_url(track.query()))
-
-    print(tracks_to_download)
-    
     from .download import download_all
 
-    print("> downloading all tracks")
-    download_all(tracks_to_download)
+    #look for youtube links
+    for playlist in playlists:
+        print(f"> fetching track URLs for playlist {playlist.name}")
+        tracks_to_download = []
+        for track in playlist.tracks:
+            tracks_to_download.append(get_song_download_url(track.query()))
+        print("> downloading all tracks")
+        download_all(tracks_to_download, playlist.name)
 
     print("> finished")
+
+#from mutagen.flac import FLAC
+#
+#audio = FLAC("example.flac")
+#audio["title"] = u"An example"
+#audio.pprint()
+#audio.save()
