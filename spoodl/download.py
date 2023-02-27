@@ -47,7 +47,7 @@ def download_all(cloud_playlist: Playlist, local_playlist: Playlist):
                     
                     index = 0
                     for url in matched_urls["extended"]:
-                        print("> ({}) " + Fore.WHITE + "{}".format(index, url))
+                        print(Fore.GREEN + "> ({}) ".format(index) + Fore.WHITE + "{}".format(url))
                         index += 1
 
                     print(Fore.GREEN + "> ({}) Skip extended version and download original tarck".format(index))
