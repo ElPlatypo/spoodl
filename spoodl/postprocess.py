@@ -1,8 +1,8 @@
 import eyed3
 import urllib.request
 
+from colorama import Fore
 from .playlist import Track
-from typing import Dict
 
 
 def tag_mp3_file(track: Track, file: str, extended:bool = False):
@@ -22,4 +22,9 @@ def tag_mp3_file(track: Track, file: str, extended:bool = False):
 
     mp3file.tag.save()
 
-    print("> Done processing track: {} by: {}".format(track.title, track.artists))
+    print(
+        Fore.GREEN + "> Done processing track: " +
+        Fore.WHITE + "{} ".format(track.title) +
+        Fore.GREEN + "by: " +
+        Fore.WHITE + "{}".format(track.artists[0])
+        )

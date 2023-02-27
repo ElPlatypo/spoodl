@@ -50,10 +50,10 @@ def download_all(cloud_playlist: Playlist, local_playlist: Playlist):
                         print(Fore.GREEN + "> ({}) ".format(index) + Fore.WHITE + "{}".format(url))
                         index += 1
 
-                    print(Fore.GREEN + "> ({}) Skip extended version and download original tarck".format(index) + Fore.WHITE)
+                    print(Fore.GREEN + "> ({}) Skip extended version and download original tarck".format(index))
                     x = False
                     while x == False:
-                        selected_url = input("> ")
+                        selected_url = input(Fore.GREEN + "> " + Fore.WHITE)
                         if float(selected_url).is_integer() and float(selected_url) in range(0,index):
                             ydl.download(matched_urls["extended"][int(selected_url)])
                             tag_mp3_file(cloud_track, os.path.join("tmp", os.listdir("tmp")[0]), True)
