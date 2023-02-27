@@ -1,5 +1,6 @@
 # spoodl
-![logo](logo.jpg) (logo courtesy of stable-diffusion)<br />
+![logo](logo.jpg) <br />
+(logo courtesy of stable-diffusion)<br />
 <br />
 Simple python module designed to create mix-ready playlists <br />
   what will this module do: <br />
