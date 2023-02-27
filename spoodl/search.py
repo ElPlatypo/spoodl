@@ -1,6 +1,14 @@
+import re
+
 from youtubesearchpython import VideosSearch
 
-# TODO find better name which is as descriptive but shorter
-def get_song_download_url(query:str, extended:bool=False) -> str:
-    videosSearch = VideosSearch(query, limit = 1)
-    return videosSearch.result()["result"][0]["link"]
+def get_song_download_url(query:str, pattern:str) -> dict:
+    original_video = VideosSearch(query, limit = 1)
+    extended_video = VideosSearch(query + " extended", limit = 5)
+    urls = []
+    for url in extended_video.result()["result"]:
+        if re.match(pattern, url["title"], re.I):
+            urls.append(url["link"])
+            
+    res = {"original": original_video.result()["result"][0]["link"], "extended": urls}  
+    return res

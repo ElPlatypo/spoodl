@@ -2,3 +2,6 @@
 .env
 .cache
 /spoodl.egg-info
+/tmp
+/library
+__pycache__/
