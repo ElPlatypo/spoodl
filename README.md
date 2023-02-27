@@ -1,4 +1,5 @@
 # spoodl
+![sus](logo.jpg)
 Simple python module designed to create mix-ready playlists <br />
   what will this module do: <br />
   1 - get track and playlist info from  spotify <br />
