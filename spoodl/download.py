@@ -50,7 +50,7 @@ def download_all(cloud_playlist: Playlist, local_playlist: Playlist):
                         print(Fore.GREEN + "> ({}) ".format(index) + Fore.WHITE + "{}".format(url))
                         index += 1
 
-                    print(Fore.GREEN + "> ({}) Skip extended version and download original tarck".format(index))
+                    print(Fore.GREEN + "> ({}) Skip extended version and download original tarck".format(index) + Fore.WHITE)
                     x = False
                     while x == False:
                         selected_url = input("> ")
