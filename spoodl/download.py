@@ -73,7 +73,7 @@ def download_all(cloud_playlist: Playlist, local_playlist: Playlist):
                     tag_mp3_file(cloud_track, os.path.join("tmp", os.listdir("tmp")[0]), False)
                 
                 #move file to appropriate folder
-                shutil.move(os.path.join("tmp", os.listdir("tmp")[0]), os.path.join("library/{}".format(cloud_playlist.name), cloud_track.title.replace("/","") + "-" + " ".join(cloud_track.artists) + ".mp3"))
+                shutil.move(os.path.join("tmp", os.listdir("tmp")[0]), os.path.join("library/{}".format(cloud_playlist.name), cloud_track.title.replace("/","") + "-" + " ".join(cloud_track.artists).replace("/","") + ".mp3"))
             else:
                 print(
                     Fore.GREEN + "> " + 
