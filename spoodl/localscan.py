@@ -17,7 +17,7 @@ def scan_library() -> List[Playlist]:
         tracklist = []
         for path in track_paths:
             track = eyed3.load(path)
-            newtrack = Track(title=track.tag.title, artists=str(track.tag.artist).split(","))
+            newtrack = Track(title=track.tag.title, artists=str(track.tag.artist).split(","), localpath= os.path.abspath(path))
             tracklist.append(newtrack)
 
         newplaylist = Playlist(playlist, tracklist)

@@ -28,21 +28,56 @@ if __name__ == "__main__":
         sync_playlist_urls = file.readlines()
 
 
-    # query spotify for playlist names and tracks
+    # query spotify for playlist names and tracks and make local folder if missing
     print(Fore.CYAN + "> Fetching playlist metadata")
 
     cloud_library : List[Playlist] = []
     for url in sync_playlist_urls:
         playlist = lookup_playlist(url)
+        print(local_library)
         if not any(playlist.name == local_playlist.name for local_playlist in local_library):
             os.mkdir("library/{}".format(playlist.name))
         cloud_library.append(playlist)
+    
+    #prompt to delete removed tracks from cloud playlist
+    def remove_track(path, title):
+        os.remove(path)
+        print(
+            Fore.CYAN + "> Track: " +
+            Fore.WHITE + title +
+            Fore.RED + "DELETED " + Fore.WHITE
+        )
+    yesall = False
+    noall = False
+    for local_playlist in local_library:
+        for cloud_playlist in cloud_library:
+            for local_track in local_playlist.tracks:
+                if not any(local_track.title == cloud_track.title for cloud_track in cloud_library):
+                    if yesall == False and noall == False:
+                        response = input(
+                            Fore.YELLOW + "> Track: " +
+                            Fore.WHITE + local_track.title +
+                            Fore.YELLOW + " not found in cloud playlist, do you want to " +
+                            Fore.RED + "DELETE " +
+                            Fore.YELLOW + "it? (y/n) or (Y/N) for all tracks" + Fore.WHITE
+                        )
+                        if response == "y" or "yes":
+                            remove_track(local_track.localpath,local_track.title)
+                        elif response == "Y" or "YES":
+                            remove_track(local_track.localpath,local_track.title)
+                            yesall = True
+                        elif response == "N" or "NO":
+                            noall = True
+                    elif yesall == True:
+                        remove_track(local_track.localpath,local_track.title)
 
+                    
 
-    #look for youtube links
+    #download one playlist at a time
     for cloud_playlist in cloud_library:
         print(Fore.CYAN + "> Downloading playlist: {}".format(cloud_playlist.name))
 
+        #look for correspondig local library and pass it to download function
         update_playlist = None
         for local_playlist in local_library:
             if local_playlist.name == cloud_playlist.name:

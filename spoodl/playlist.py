@@ -17,6 +17,7 @@ SPOTIPY = spotipy.Spotify(auth_manager=spotipy.SpotifyOAuth(
 class Track:
     title: str
     artists: List[str]
+    localpath: str = ""
     album: str = ""
     date: datetime = None
     cover: str = ""
@@ -29,7 +30,7 @@ class Track:
 @dataclass
 class Playlist:
     name: str
-    tracks: List[Track]
+    tracks: List[Track] 
 
 #probably not the best approach
 keylist = {
@@ -72,3 +73,9 @@ def lookup_playlist(playlist: List[str]) -> Playlist:
             Fore.WHITE + "{}".format(track["track"]["album"]["name"]))
 
     return Playlist(name=name, tracks=tracks)
+
+
+
+
+
+
