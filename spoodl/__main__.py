@@ -34,7 +34,6 @@ if __name__ == "__main__":
     cloud_library : List[Playlist] = []
     for url in sync_playlist_urls:
         playlist = lookup_playlist(url)
-        print(local_library)
         if not any(playlist.name == local_playlist.name for local_playlist in local_library):
             os.mkdir("library/{}".format(playlist.name))
         cloud_library.append(playlist)
@@ -45,31 +44,32 @@ if __name__ == "__main__":
         print(
             Fore.CYAN + "> Track: " +
             Fore.WHITE + title +
-            Fore.RED + "DELETED " + Fore.WHITE
+            Fore.RED + " DELETED " + Fore.WHITE
         )
     yesall = False
     noall = False
     for local_playlist in local_library:
-        for cloud_playlist in cloud_library:
+        cloud_playlist = [x for x in cloud_library if x.name == local_playlist.name]
+        if cloud_playlist != []:
             for local_track in local_playlist.tracks:
-                if not any(local_track.title == cloud_track.title for cloud_track in cloud_library):
-                    if yesall == False and noall == False:
-                        response = input(
-                            Fore.YELLOW + "> Track: " +
-                            Fore.WHITE + local_track.title +
-                            Fore.YELLOW + " not found in cloud playlist, do you want to " +
-                            Fore.RED + "DELETE " +
-                            Fore.YELLOW + "it? (y/n) or (Y/N) for all tracks" + Fore.WHITE
-                        )
-                        if response == "y" or "yes":
+                    if not any(local_track.title == cloud_track.title for cloud_track in cloud_playlist[0].tracks):
+                        if yesall == False and noall == False:
+                            response = input(
+                                Fore.YELLOW + "> Track: " +
+                                Fore.WHITE + local_track.title +
+                                Fore.YELLOW + " not found in cloud playlist, do you want to " +
+                                Fore.RED + "DELETE " +
+                                Fore.YELLOW + "it? (y/n) or (Y/N) for all tracks \n> " + Fore.WHITE
+                            )
+                            if response == "y" or "yes":
+                                remove_track(local_track.localpath,local_track.title)
+                            elif response == "Y" or "YES":
+                                remove_track(local_track.localpath,local_track.title)
+                                yesall = True
+                            elif response == "N" or "NO":
+                                noall = True
+                        elif yesall == True:
                             remove_track(local_track.localpath,local_track.title)
-                        elif response == "Y" or "YES":
-                            remove_track(local_track.localpath,local_track.title)
-                            yesall = True
-                        elif response == "N" or "NO":
-                            noall = True
-                    elif yesall == True:
-                        remove_track(local_track.localpath,local_track.title)
 
                     
 

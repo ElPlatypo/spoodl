@@ -80,7 +80,7 @@ def download_all(cloud_playlist: Playlist, local_playlist: Playlist):
                     Fore.WHITE + "{} ".format(cloud_track.title) +
                     Fore.GREEN + "by: " +
                     Fore.WHITE + "{} ".format(cloud_track.artists[0]) + 
-                    Fore.GREEN + "already downloaded, skipping"
+                    Fore.GREEN + "already downloaded, skipping" + Fore.WHITE
                     )
 
         if os.path.exists("tmp"):
