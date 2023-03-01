@@ -60,14 +60,15 @@ def lookup_playlist(playlist: List[str]) -> Playlist:
                 title = track["track"]["name"],
                 artists = [ x["name"] for x in track["track"]["artists"] ],
                 album = track["track"]["album"]["name"],
-                date = datetime.strptime(track["track"]["album"]["release_date"], "%Y-%m-%d"),
+                date = track["track"]["album"]["release_date"],
+                #date = datetime.strptime(track["track"]["album"]["release_date"], "%Y-%m-%d"),
                 cover = track["track"]["album"]["images"][1]["url"],
                 bpm = int(float(analysis["track"]["tempo"])),
                 key = keylist[int(analysis["track"]["key"])]
             )
         )
         print(
-            Fore.GREEN + "> Found track: " + 
+            Fore.GREEN + "> Found metadata for track: " + 
             Fore.WHITE + "{} ".format(track["track"]["name"]) +
             Fore.GREEN + "album: " +
             Fore.WHITE + "{}".format(track["track"]["album"]["name"]))

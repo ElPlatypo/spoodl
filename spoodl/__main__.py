@@ -72,10 +72,9 @@ if __name__ == "__main__":
                             remove_track(local_track.localpath,local_track.title)
 
                     
-
     #download one playlist at a time
     for cloud_playlist in cloud_library:
-        print(Fore.CYAN + "> Downloading playlist: {}".format(cloud_playlist.name))
+        print(Fore.CYAN + "> Downloading playlist: {}".format(cloud_playlist.name) + Fore.WHITE)
 
         #look for correspondig local library and pass it to download function
         update_playlist = None
