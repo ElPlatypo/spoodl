@@ -49,31 +49,65 @@ keylist = {
     11: "B"
 }
 
-def lookup_playlist(playlist: List[str]) -> Playlist:
-    name = SPOTIPY.playlist(playlist,"name")["name"]
-    playlist_tracks = SPOTIPY.playlist_items(playlist,"items(track(name,artists(name),album,id))")["items"]
-    tracks = []
-    for track in playlist_tracks:
-        analysis = SPOTIPY.audio_analysis(track["track"]["id"])
-        tracks.append(
-            Track(
-                title = track["track"]["name"],
-                artists = [ x["name"] for x in track["track"]["artists"] ],
-                album = track["track"]["album"]["name"],
-                date = track["track"]["album"]["release_date"],
-                #date = datetime.strptime(track["track"]["album"]["release_date"], "%Y-%m-%d"),
-                cover = track["track"]["album"]["images"][1]["url"],
-                bpm = int(float(analysis["track"]["tempo"])),
-                key = keylist[int(analysis["track"]["key"])]
-            )
-        )
+def lookup_playlist(playlist: str) -> Playlist:
+    try:
+        name = SPOTIPY.playlist(playlist,"name")["name"]
+        playlist_tracks = SPOTIPY.playlist_items(playlist,"items(track(name,artists(name),album,id))")["items"]
+              
+    except:
         print(
-            Fore.GREEN + "> Found metadata for track: " + 
-            Fore.WHITE + "{} ".format(track["track"]["name"]) +
-            Fore.GREEN + "album: " +
-            Fore.WHITE + "{}".format(track["track"]["album"]["name"]))
+            Fore.RED + "> Failed to Fetch playlist data from url: " +
+            Fore.WHITE + playlist +
+            Fore.RED + " skipping..." + Fore.WHITE
+        )
+        return Playlist(name="error", tracks=[])
 
-    return Playlist(name=name, tracks=tracks)
+    else:
+        tracks = []
+        for track in playlist_tracks:
+            try:
+                analysis = SPOTIPY.audio_analysis(track["track"]["id"])
+            except:
+                print(
+                    Fore.RED + " > Failed to fetch audio analisys for track: " +
+                    Fore.WHITE + track["track"]["name"] +
+                    Fore.RED + " skipping..." + Fore.WHITE
+                )
+                tracks.append(
+                    Track(
+                        title = track["track"]["name"],
+                        artists = [ x["name"] for x in track["track"]["artists"] ],
+                        album = track["track"]["album"]["name"],
+                        date = track["track"]["album"]["release_date"],
+                        #date = datetime.strptime(track["track"]["album"]["release_date"], "%Y-%m-%d"),
+                        cover = track["track"]["album"]["images"][1]["url"]
+                    )
+                )
+                print(
+                    Fore.GREEN + "> Found metadata for track: " + 
+                    Fore.WHITE + "{} ".format(track["track"]["name"]) +
+                    Fore.GREEN + "album: " +
+                    Fore.WHITE + "{}".format(track["track"]["album"]["name"]))
+            else:
+                tracks.append(
+                    Track(
+                        title = track["track"]["name"],
+                        artists = [ x["name"] for x in track["track"]["artists"] ],
+                        album = track["track"]["album"]["name"],
+                        date = track["track"]["album"]["release_date"],
+                        #date = datetime.strptime(track["track"]["album"]["release_date"], "%Y-%m-%d"),
+                        cover = track["track"]["album"]["images"][1]["url"],
+                        bpm = int(float(analysis["track"]["tempo"])),
+                        key = keylist[int(analysis["track"]["key"])]
+                    )
+                )
+                print(
+                    Fore.GREEN + "> Found metadata for track: " + 
+                    Fore.WHITE + "{} ".format(track["track"]["name"]) +
+                    Fore.GREEN + "album: " +
+                    Fore.WHITE + "{}".format(track["track"]["album"]["name"])) 
+                
+        return Playlist(name=name, tracks=tracks)   
 
 
 

@@ -34,7 +34,7 @@ if __name__ == "__main__":
     cloud_library : List[Playlist] = []
     for url in sync_playlist_urls:
         playlist = lookup_playlist(url)
-        if not any(playlist.name == local_playlist.name for local_playlist in local_library):
+        if not any(playlist.name == local_playlist.name for local_playlist in local_library) and playlist.name != "error":
             os.mkdir("library/{}".format(playlist.name))
         cloud_library.append(playlist)
     

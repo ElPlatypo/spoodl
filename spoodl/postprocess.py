@@ -17,8 +17,9 @@ def tag_mp3_file(track: Track, file: str, extended:bool = False):
     mp3file.tag.artist = ",".join(track.artists)
     mp3file.tag.album = track.album
     mp3file.tag.date = track.date
-    mp3file.tag.bpm = track.bpm
-    mp3file.tag.key = track.key
+    if track.bpm != "":
+        mp3file.tag.bpm = track.bpm
+        mp3file.tag.key = track.key
 
     #download and embed cover image
     resp = urllib.request.urlopen(track.cover)
