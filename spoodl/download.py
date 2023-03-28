@@ -37,13 +37,15 @@ def download_all(cloud_playlist: Playlist, local_playlist: Playlist):
             if check == False:
                 pattern = "^(?=.*\\b{}\\b)(?=.*\\b{}\\b)(?=.*\\bextended\\b).*$".format(cloud_track.title, cloud_track.artists[0])
                 matched_urls = get_song_download_url(cloud_track.query(), pattern)
+                skip = False
 
                 #ask user for correct extended version
-                if matched_urls["extended"] != []:
+                if matched_urls["extended"] != [] and skip == False:
+
                     print(
                         Fore.GREEN + "> Found possible extended versions for track:" +
                         Fore.WHITE + " {}".format(cloud_track.title) +
-                        Fore.GREEN + "\n> Please specify wich (if any) to download (0-5)"
+                        Fore.GREEN + "\n> Please specify wich (if any) to download (0-{})".format(matched_urls["extended"].__len__() + 1)
                         )
                     
                     index = 0
@@ -52,18 +54,23 @@ def download_all(cloud_playlist: Playlist, local_playlist: Playlist):
                         index += 1
 
                     print(Fore.GREEN + "> ({}) Skip extended version and download original tarck".format(index))
+                    index += 1
+                    print(Fore.GREEN + "> ({}) Skip extended version and download original for ALL tracks".format(index) + Fore.WHITE)
                     x = False
                     while x == False:
                         selected_url = input(Fore.GREEN + "> " + Fore.WHITE)
-                        if float(selected_url).is_integer() and float(selected_url) in range(0,index):
+                        if float(selected_url).is_integer() and float(selected_url) in range(0, index - 1):
                             ydl.download(matched_urls["extended"][int(selected_url)])
                             tag_mp3_file(cloud_track, os.path.join("tmp", os.listdir("tmp")[0]), True)
                             x = True
 
-                        elif float(selected_url) == index:
+                        elif float(selected_url) == index - 1:
                             ydl.download(matched_urls["original"])
                             tag_mp3_file(cloud_track, os.path.join("tmp", os.listdir("tmp")[0]), False)
                             x = True
+                        
+                        elif float(selected_url) == index:
+                            skip == True
 
                         else:
                             print("> Error reading choice, please select a number between 0-5")

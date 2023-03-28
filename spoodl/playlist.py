@@ -11,6 +11,7 @@ SPOTIPY = spotipy.Spotify(auth_manager=spotipy.SpotifyOAuth(
     client_id=env.get("CLIENT_ID"),
     client_secret=env.get("CLIENT_SECRET"), 
     redirect_uri=env.get("REDIRECT_URI"),
+    scope="user-library-read"
 ))
 
 @dataclass
