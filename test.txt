@@ -1,0 +1,395 @@
+import os
+
+from typing import List
+from colorama import Fore
+from .localscan import scan_library
+from .playlist import Playlist, lookup_playlist
+from .download import download_all
+
+if __name__ == "__main__":
+    
+    #get current working dir and crates root library folder
+    cwd = os.getcwd()
+    if not os.path.exists("library"):
+        os.mkdir("library")
+
+
+    #scan local folder for downloaded playlists amd tracks
+    print(Fore.CYAN + "> Scanning local and requested playlists")
+
+    local_library: List[Playlist] = scan_library()
+
+
+    # scan for wanted playlists to sync
+    print(Fore.CYAN + "> Loading playlists.txt")
+
+    sync_playlist_urls = []
+    with open("playlists.txt") as file:
+        sync_playlist_urls = file.readlines()
+
+
+    # query spotify for playlist names and tracks and make local folder if missing
+    print(Fore.CYAN + "> Fetching playlist metadata")
+
+    cloud_library : List[Playlist] = []
+    for url in sync_playlist_urls:
+        playlist = lookup_playlist(url)
+        if not any(playlist.name == local_playlist.name for local_playlist in local_library) and playlist.name != "error":
+            os.mkdir("library/{}".format(playlist.name))
+        cloud_library.append(playlist)
+    
+    #prompt to delete removed tracks from cloud playlist
+    def remove_track(path, title):
+        os.remove(path)
+        print(
+            Fore.CYAN + "> Track: " +
+            Fore.WHITE + title +
+            Fore.RED + " DELETED " + Fore.WHITE
+        )
+    yesall = False
+    noall = False
+    for local_playlist in local_library:
+        cloud_playlist = [x for x in cloud_library if x.name == local_playlist.name]
+        if cloud_playlist != []:
+            for local_track in local_playlist.tracks:
+                    if not any(local_track.title == cloud_track.title for cloud_track in cloud_playlist[0].tracks):
+                        if yesall == False and noall == False:
+                            response = input(
+                                Fore.YELLOW + "> Track: " +
+                                Fore.WHITE + local_track.title +
+                                Fore.YELLOW + " not found in cloud playlist, do you want to " +
+                                Fore.RED + "DELETE " +
+                                Fore.YELLOW + "it? (y/n) or (Y/N) for all tracks \n> " + Fore.WHITE
+                            )
+                            if response == "y" or "yes":
+                                remove_track(local_track.localpath,local_track.title)
+                            elif response == "Y" or "YES":
+                                remove_track(local_track.localpath,local_track.title)
+                                yesall = True
+                            elif response == "N" or "NO":
+                                noall = True
+                        elif yesall == True:
+                            remove_track(local_track.localpath,local_track.title)
+
+                    
+    #download one playlist at a time
+    for cloud_playlist in cloud_library:
+        print(Fore.CYAN + "> Downloading playlist: {}".format(cloud_playlist.name) + Fore.WHITE)
+
+        #look for correspondig local library and pass it to download function
+        update_playlist = None
+        for local_playlist in local_library:
+            if local_playlist.name == cloud_playlist.name:
+                update_playlist = local_playlist
+        download_all(cloud_playlist, update_playlist)
+
+
+    print(Fore.GREEN + "> Finished")
+
+import os
+import shutil
+
+from colorama import Fore
+from yt_dlp import YoutubeDL
+from .playlist import Playlist
+from .search import get_song_download_url
+from .postprocess import tag_mp3_file
+
+
+def download_all(cloud_playlist: Playlist, local_playlist: Playlist):
+    AUDIO_OPTIONS = {
+        "format": "bestaudio/best",
+        "postprocessors": [{
+            "key": "FFmpegExtractAudio",
+            'preferredcodec': 'mp3',
+        }],
+        "paths": {
+            "home": "tmp" ,
+        },
+        "restrictfilenames": "true",
+    }
+
+    with YoutubeDL(AUDIO_OPTIONS) as ydl:
+
+        
+        for cloud_track in cloud_playlist.tracks:
+
+            #chech if track has already been downloaded
+            check = False
+            if local_playlist is not None:
+                for local_track in local_playlist.tracks:
+                    if cloud_track.title == local_track.title and cloud_track.album == cloud_track.album:
+                        check = True
+
+
+            if check == False:
+                pattern = "^(?=.*\\b{}\\b)(?=.*\\b{}\\b)(?=.*\\bextended\\b).*$".format(cloud_track.title, cloud_track.artists[0])
+                matched_urls = get_song_download_url(cloud_track.query(), pattern)
+                skip = False
+
+                #ask user for correct extended version
+                if matched_urls["extended"] != [] and skip == False:
+
+                    print(
+                        Fore.GREEN + "> Found possible extended versions for track:" +
+                        Fore.WHITE + " {}".format(cloud_track.title) +
+                        Fore.GREEN + "\n> Please specify wich (if any) to download (0-{})".format(matched_urls["extended"].__len__() + 1)
+                        )
+                    
+                    index = 0
+                    for url in matched_urls["extended"]:
+                        print(Fore.GREEN + "> ({}) ".format(index) + Fore.WHITE + "{}".format(url))
+                        index += 1
+
+                    print(Fore.GREEN + "> ({}) Skip extended version and download original tarck".format(index))
+                    index += 1
+                    print(Fore.GREEN + "> ({}) Skip extended version and download original for ALL tracks".format(index) + Fore.WHITE)
+                    x = False
+                    while x == False:
+                        selected_url = input(Fore.GREEN + "> " + Fore.WHITE)
+                        if float(selected_url).is_integer() and float(selected_url) in range(0, index - 1):
+                            ydl.download(matched_urls["extended"][int(selected_url)])
+                            tag_mp3_file(cloud_track, os.path.join("tmp", os.listdir("tmp")[0]), True)
+                            x = True
+
+                        elif float(selected_url) == index - 1:
+                            ydl.download(matched_urls["original"])
+                            tag_mp3_file(cloud_track, os.path.join("tmp", os.listdir("tmp")[0]), False)
+                            x = True
+                        
+                        elif float(selected_url) == index:
+                            skip == True
+
+                        else:
+                            print("> Error reading choice, please select a number between 0-5")
+
+                else:
+                    ydl.download(matched_urls["original"])
+                    tag_mp3_file(cloud_track, os.path.join("tmp", os.listdir("tmp")[0]), False)
+                
+                #move file to appropriate folder
+                shutil.move(os.path.join("tmp", os.listdir("tmp")[0]), os.path.join("library/{}".format(cloud_playlist.name), cloud_track.title.replace("/","") + "-" + " ".join(cloud_track.artists).replace("/","") + ".mp3"))
+            else:
+                print(
+                    Fore.GREEN + "> " + 
+                    Fore.WHITE + "{} ".format(cloud_track.title) +
+                    Fore.GREEN + "by: " +
+                    Fore.WHITE + "{} ".format(cloud_track.artists[0]) + 
+                    Fore.GREEN + "already downloaded, skipping" + Fore.WHITE
+                    )
+
+        if os.path.exists("tmp"):
+            shutil.rmtree("tmp")
+
+            import os
+import eyed3
+
+from typing import List
+from colorama import Fore
+from .playlist import Track,Playlist
+
+
+def scan_library() -> List[Playlist]:
+    #get local folder names
+    localplaylists = [dir.name for dir in os.scandir("library") if dir.is_dir()]
+    librarary = []
+
+    #populate library
+    for playlist in localplaylists:
+        track_paths = [path for path in os.scandir("library/{}".format(playlist)) if not path.is_dir()]
+        tracklist = []
+        for path in track_paths:
+            track = eyed3.load(path)
+            newtrack = Track(title=track.tag.title, artists=str(track.tag.artist).split(","), localpath= os.path.abspath(path))
+            tracklist.append(newtrack)
+
+        newplaylist = Playlist(playlist, tracklist)
+        librarary.append(newplaylist)
+        print(
+            Fore.GREEN + "> Found local playlist: " +
+            Fore.WHITE + "{}".format(playlist)
+            )
+    
+
+    return librarary
+
+    import spotipy
+
+from datetime import datetime
+from typing import List
+from dataclasses import dataclass
+from colorama import Fore
+from os import environ as env
+from enum import Enum
+
+SPOTIPY = spotipy.Spotify(auth_manager=spotipy.SpotifyOAuth(
+    client_id=env.get("CLIENT_ID"),
+    client_secret=env.get("CLIENT_SECRET"), 
+    redirect_uri=env.get("REDIRECT_URI"),
+    scope="user-library-read"
+))
+
+@dataclass
+class Track:
+    title: str
+    artists: List[str]
+    localpath: str = ""
+    album: str = ""
+    date: datetime = None
+    cover: str = ""
+    bpm: str = ""
+    key: int = -1
+
+    def query(self) -> str:
+        return self.title + " " + str.join(" ", self.artists)
+
+@dataclass
+class Playlist:
+    name: str
+    tracks: List[Track] 
+
+#probably not the best approach
+keylist = {
+    -1: "-",
+    0 : "C",
+    1 : "C♯,D♭",
+    2 : "D",
+    3 : "D♯,E♭",
+    4 : "E",
+    5 : "F",
+    6 : "F♯,G♭",
+    7 : "G",
+    8 : "G♯,A♭",
+    9 : "A",
+    10: "A♯,B♭",
+    11: "B"
+}
+
+def lookup_playlist(playlist: str) -> Playlist:
+    
+    check = True
+    offset = 0
+    playlist_tracks = []
+    while check == True:
+        try:
+            name = SPOTIPY.playlist(playlist,"name")["name"]
+            items = SPOTIPY.playlist_items(playlist,"items(track(name,artists(name),album,id))", offset = offset)["items"]
+            for item in items:
+                playlist_tracks.append(item)
+            if items == []:
+                check = False
+            offset += 100       
+        except:
+            print(
+                Fore.RED + "> Failed to Fetch playlist data from url: " +
+                Fore.WHITE + playlist +
+                Fore.RED + " skipping..." + Fore.WHITE
+            )
+            return Playlist(name="error", tracks=[])
+
+
+    tracks = []
+    for track in playlist_tracks:
+        try:
+            analysis = SPOTIPY.audio_analysis(track["track"]["id"])
+        except:
+            print(
+                Fore.RED + " > Failed to fetch audio analisys for track: " +
+                Fore.WHITE + track["track"]["name"] +
+                Fore.RED + " skipping..." + Fore.WHITE
+            )
+            tracks.append(
+                Track(
+                    title = track["track"]["name"],
+                    artists = [ x["name"] for x in track["track"]["artists"] ],
+                    album = track["track"]["album"]["name"],
+                    date = track["track"]["album"]["release_date"],
+                    #date = datetime.strptime(track["track"]["album"]["release_date"], "%Y-%m-%d"),
+                    cover = track["track"]["album"]["images"][1]["url"]
+                )
+            )
+            print(
+                Fore.GREEN + "> Found metadata for track: " + 
+                Fore.WHITE + "{} ".format(track["track"]["name"]) +
+                Fore.GREEN + "album: " +
+                Fore.WHITE + "{}".format(track["track"]["album"]["name"]))
+        else:
+            tracks.append(
+                Track(
+                    title = track["track"]["name"],
+                    artists = [ x["name"] for x in track["track"]["artists"] ],
+                    album = track["track"]["album"]["name"],
+                    date = track["track"]["album"]["release_date"],
+                    #date = datetime.strptime(track["track"]["album"]["release_date"], "%Y-%m-%d"),
+                    cover = track["track"]["album"]["images"][1]["url"],
+                    bpm = int(float(analysis["track"]["tempo"])),
+                    key = keylist[int(analysis["track"]["key"])]
+                )
+            )
+            print(
+                Fore.GREEN + "> Found metadata for track: " + 
+                Fore.WHITE + "{} ".format(track["track"]["name"]) +
+                Fore.GREEN + "album: " +
+                Fore.WHITE + "{}".format(track["track"]["album"]["name"])) 
+            
+    return Playlist(name=name, tracks=tracks)   
+
+
+
+
+
+
+import eyed3
+import urllib.request
+
+from colorama import Fore
+from .playlist import Track
+
+
+def tag_mp3_file(track: Track, file: str, extended:bool = False):
+    mp3file = eyed3.load(file)
+
+    #comment if extended version
+    if extended:
+        mp3file.tag.comments.set(u"(extended version)")
+
+    #standard tags
+    mp3file.tag.title = track.title
+    mp3file.tag.artist = ",".join(track.artists)
+    mp3file.tag.album = track.album
+    mp3file.tag.date = track.date
+    if track.bpm != "":
+        mp3file.tag.bpm = track.bpm
+        mp3file.tag.key = track.key
+
+    #download and embed cover image
+    resp = urllib.request.urlopen(track.cover)
+    cover = resp.read()
+    mp3file.tag.images.set(3, cover, "image/jpeg", u"cover")
+
+    mp3file.tag.save()
+
+    print(
+        Fore.GREEN + "> Done processing track: " +
+        Fore.WHITE + "{} ".format(track.title) +
+        Fore.GREEN + "by: " +
+        Fore.WHITE + "{}".format(track.artists[0])
+        )
+
+import re
+
+from youtubesearchpython import VideosSearch
+
+def get_song_download_url(query:str, pattern:str) -> dict:
+    original_video = VideosSearch(query, limit = 1)
+    extended_video = VideosSearch(query + " extended", limit = 5)
+    urls = []
+    for url in extended_video.result()["result"]:
+        try:
+            if re.match(pattern, url["title"], re.I):
+                urls.append(url["link"])
+        except:
+            print("> error parsing extended title")
+            
+    res = {"original": original_video.result()["result"][0]["link"], "extended": urls}  
+    return res
